@@ -12,8 +12,8 @@ import java.util.Properties;
  *
  * @author Yourtion
  */
-public class ConfigUtils {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigUtils.class);
+public class ConfUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfUtil.class);
 
     private static final Properties CONF = new Properties();
 
@@ -123,7 +123,7 @@ public class ConfigUtils {
                 in = new FileInputStream(file);
             } else {
                 // 读取jar内的application.properties文件
-                in = ConfigUtils.class.getClassLoader().getResourceAsStream(confFile);
+                in = ConfUtil.class.getClassLoader().getResourceAsStream(confFile);
             }
             loadConf(in);
             LOGGER.debug("加载配置文件：" + confFile);
