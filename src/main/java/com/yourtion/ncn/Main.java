@@ -27,18 +27,19 @@ import java.util.concurrent.TimeUnit;
  */
 public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
-    private static final ConcurrentHashMap<String, List<Instance>> currentConfig = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<String, List<Instance>> queue = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, List<Instance>> CURRENT_CONFIG = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, List<Instance>> QUEUE = new ConcurrentHashMap<>();
+    private static String lastGenText = "";
 
     private static void processEvent(Event event) {
         if (event instanceof NamingEvent) {
             NamingEvent e = (NamingEvent) event;
             LOGGER.debug("ProcessEvent : {} : {}", e.getServiceName(), e.getInstances());
-            queue.put(e.getServiceName(), e.getInstances());
+            QUEUE.put(e.getServiceName(), e.getInstances());
         }
     }
 
-    public static <Map> void main(String[] args) {
+    public static void main(String[] args) {
         Properties conf = ConfUtil.loadConfig();
         LOGGER.info("Load config: {}", conf);
         try {
@@ -65,31 +66,34 @@ public class Main {
                 try {
                     ListView<String> serviceList = naming.getServicesOfServer(0, ConfUtil.getInt("ncn.pageSize", 100));
                     for (String service : serviceList.getData()) {
-                        if (!currentConfig.containsKey(service)) {
+                        if (!CURRENT_CONFIG.containsKey(service)) {
                             naming.subscribe(service, Main::processEvent);
                         }
                     }
-                    if (queue.isEmpty()) {
+                    if (QUEUE.isEmpty()) {
                         return;
                     }
-                    HashMap<String, List<Instance>> config = new HashMap<>(currentConfig);
-                    config.putAll(queue);
-                    queue.clear();
+                    HashMap<String, List<Instance>> config = new HashMap<>(CURRENT_CONFIG);
+                    config.putAll(QUEUE);
+                    QUEUE.clear();
                     for (String service : config.keySet()) {
                         if (config.get(service).isEmpty()) {
                             naming.unsubscribe(service, Main::processEvent);
                             config.remove(service);
                         }
                     }
-                    // TODO: 生成配置文件（考虑跟上次生成结果比对）
-                    LOGGER.warn("{}", config);
+                    String genText = NginxConfigGen.genServer(config);
+                    if (!genText.equals(lastGenText)) {
+                        // TODO: 写入配置文件并重启
+                        lastGenText = genText;
+                    }
                     // 成功则替换配置
-                    currentConfig.clear();
-                    currentConfig.putAll(config);
+                    CURRENT_CONFIG.clear();
+                    CURRENT_CONFIG.putAll(config);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LOGGER.error("ScheduleAtFixedRateError: ", e);
                 }
-            }, 1, 3, TimeUnit.SECONDS);
+            }, 1, ConfUtil.getInt("ncn.period", 5), TimeUnit.SECONDS);
         } catch (NacosException e) {
             e.printStackTrace();
         }
