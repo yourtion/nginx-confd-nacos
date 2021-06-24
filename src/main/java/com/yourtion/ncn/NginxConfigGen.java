@@ -9,6 +9,29 @@ import java.util.Map;
  * @author Yourtion
  */
 public class NginxConfigGen {
+    static class GenRet {
+        private final String upstream;
+        private final String location;
+
+        @Override
+        public String toString() {
+            return upstream + location;
+        }
+
+        public GenRet(String upstream, String location) {
+            this.upstream = upstream;
+            this.location = location;
+        }
+
+        public String getUpstream() {
+            return upstream;
+        }
+
+        public String getLocation() {
+            return location;
+        }
+    }
+
     static public String genUpstream(String name, List<Instance> ins) {
         StringBuilder sb = new StringBuilder();
         sb.append("upstream ").append(name).append(" {\n");
@@ -25,7 +48,7 @@ public class NginxConfigGen {
                 "  }";
     }
 
-    static public String genServer(Map<String, List<Instance>> info) {
+    static public GenRet genServer(Map<String, List<Instance>> info) {
         StringBuilder upstream = new StringBuilder();
         StringBuilder proxy = new StringBuilder();
         for (String server : info.keySet()) {
@@ -34,12 +57,6 @@ public class NginxConfigGen {
             proxy.append(genProxy(server));
             proxy.append("\n");
         }
-        StringBuilder sb = new  StringBuilder(upstream);
-        sb.append("\n");
-        sb.append("server {\n");
-        sb.append(proxy);
-        sb.append("}\n");
-        return sb.toString();
-
+        return new GenRet(upstream.toString(), proxy.toString());
     }
 }

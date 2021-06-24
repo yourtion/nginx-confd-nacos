@@ -9,6 +9,7 @@ import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.alibaba.nacos.api.naming.pojo.ListView;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.yourtion.ncn.utils.ConfUtil;
+import com.yourtion.ncn.utils.FileUtil;
 import com.yourtion.ncn.utils.NacosUtil;
 import com.yourtion.ncn.utils.NginxUtil;
 import org.slf4j.Logger;
@@ -82,10 +83,20 @@ public class Main {
                             config.remove(service);
                         }
                     }
-                    String genText = NginxConfigGen.genServer(config);
-                    if (!genText.equals(lastGenText)) {
-                        // TODO: 写入配置文件并重启
-                        lastGenText = genText;
+                    NginxConfigGen.GenRet ret = NginxConfigGen.genServer(config);
+                    if (!ret.toString().equals(lastGenText)) {
+                        // TODO: 错误处理
+                        boolean uOk = FileUtil.backupAndWrite(ConfUtil.get("ncn.conf.upstream"), ret.getUpstream());
+                        boolean lOk = FileUtil.backupAndWrite(ConfUtil.get("ncn.conf.location"), ret.getLocation());
+                        if (!uOk) {
+                            FileUtil.rollback(ConfUtil.get("ncn.conf.upstream"));
+                        }
+                        if (!lOk) {
+                            FileUtil.rollback(ConfUtil.get("ncn.conf.location"));
+                        }
+                        boolean nOk = nginx.checkNginxOk();
+                        boolean rOk = nginx.reload();
+                        lastGenText = ret.toString();
                     }
                     // 成功则替换配置
                     CURRENT_CONFIG.clear();
