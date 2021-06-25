@@ -77,6 +77,7 @@ public class Main {
                     HashMap<String, List<Instance>> config = new HashMap<>(CURRENT_CONFIG);
                     config.putAll(QUEUE);
                     QUEUE.clear();
+                    // TODO: 处理已经被移除的服务
                     for (String service : config.keySet()) {
                         if (config.get(service).isEmpty()) {
                             naming.unsubscribe(service, Main::processEvent);

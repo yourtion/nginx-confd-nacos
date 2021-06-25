@@ -14,8 +14,8 @@ class FileUtilTest {
     private static final String TEST_INFO_ORG = "TEST_ORG";
     private static final String TEST_INFO_RET = "TEST_RET";
 
-    @BeforeEach
-    void setUp() throws IOException {
+    @BeforeAll
+    static void setUp() throws IOException {
         Files.write(Paths.get(TEST_FILE), TEST_INFO_ORG.getBytes(StandardCharsets.UTF_8));
     }
 
