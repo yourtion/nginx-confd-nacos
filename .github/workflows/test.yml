@@ -27,11 +27,11 @@ jobs:
         && touch /tmp/server.location \
         && touch /tmp/nacos.upstream \
     - name: Nginx Test
-      run: nginx -c /tmp/http.conf -T
+      run: nginx -c /tmp/http.conf -p $PWD -T
     - name: Nginx Start
-      run: nginx -c /tmp/http.conf
+      run: nginx -c /tmp/http.conf -p $PWD
     - name: Nginx Curl
       run: curl -I http://127.0.0.1:3000
     - name: Nginx Reload
-      run: nginx -c /tmp/http.conf -s reload
+      run: nginx -c /tmp/http.conf -p $PWD -s reload
 
