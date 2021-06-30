@@ -21,9 +21,17 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
-    - name: Install Nginx
-      run: sudo apt-get install -y nginx
-    - name: Test Nginx
-      run: nginx -T
-    - name: Reload Nginx
-      run: nginx -s reload
+    - name: Copy Nginx Config file
+      run: |
+        cp src/test/resources/http.conf /tmp/ \
+        && touch /tmp/server.location \
+        && touch /tmp/nacos.upstream \
+    - name: Nginx Test
+      run: nginx -c /tmp/http.conf -T
+    - name: Nginx Start
+      run: nginx -c /tmp/http.conf
+    - name: Nginx Curl
+      run: curl -I http://127.0.0.1:3000
+    - name: Nginx Reload
+      run: nginx -c /tmp/http.conf -s reload
+
