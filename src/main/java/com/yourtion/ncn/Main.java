@@ -30,7 +30,7 @@ public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static final ConcurrentHashMap<String, List<Instance>> CURRENT_CONFIG = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, List<Instance>> QUEUE = new ConcurrentHashMap<>();
-    private static String lastGenText = "";
+    private static NginxConfigGen.GenRet lastGen= null;
 
     private static void processEvent(Event event) {
         if (event instanceof NamingEvent) {
@@ -71,9 +71,10 @@ public class Main {
                             naming.subscribe(service, Main::processEvent);
                         }
                     }
-                    if (QUEUE.isEmpty()) {
+                    if (lastGen != null && QUEUE.isEmpty()) {
                         return;
                     }
+                    LOGGER.debug("start processing");
                     HashMap<String, List<Instance>> config = new HashMap<>(CURRENT_CONFIG);
                     config.putAll(QUEUE);
                     QUEUE.clear();
@@ -85,7 +86,7 @@ public class Main {
                         }
                     }
                     NginxConfigGen.GenRet ret = NginxConfigGen.genServer(config);
-                    if (!ret.toString().equals(lastGenText)) {
+                    if (!ret.equals(lastGen)) {
                         // TODO: 错误处理
                         boolean uOk = FileUtil.backupAndWrite(ConfUtil.get("ncn.conf.upstream"), ret.getUpstream());
                         boolean lOk = FileUtil.backupAndWrite(ConfUtil.get("ncn.conf.location"), ret.getLocation());
@@ -97,7 +98,7 @@ public class Main {
                         }
                         boolean nOk = nginx.checkNginxOk();
                         boolean rOk = nginx.reload();
-                        lastGenText = ret.toString();
+                        lastGen = ret;
                     }
                     // 成功则替换配置
                     CURRENT_CONFIG.clear();
@@ -105,7 +106,7 @@ public class Main {
                 } catch (Exception e) {
                     LOGGER.error("ScheduleAtFixedRateError: ", e);
                 }
-            }, 1, ConfUtil.getInt("ncn.period", 5), TimeUnit.SECONDS);
+            }, ConfUtil.getInt("ncn.delay", 10), ConfUtil.getInt("ncn.period", 5), TimeUnit.SECONDS);
         } catch (NacosException e) {
             e.printStackTrace();
         }

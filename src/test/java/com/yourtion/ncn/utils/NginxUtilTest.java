@@ -3,11 +3,9 @@ package com.yourtion.ncn.utils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class NginxUtilTest {
 
-    private static final NginxUtil nginx = new NginxUtil("/usr/local/bin/openresty -c /tmp/http.conf");
+    private static final NginxUtil nginx = new NginxUtil(System.getenv("NginxUtilTestCMD"));
 
     @Test
     void checkNginxOk() {

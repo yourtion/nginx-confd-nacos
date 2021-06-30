@@ -4,6 +4,7 @@ import com.alibaba.nacos.api.naming.pojo.Instance;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Yourtion
@@ -29,6 +30,25 @@ public class NginxConfigGen {
 
         public String getLocation() {
             return location;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            GenRet genRet = (GenRet) o;
+            return Objects.equals(upstream, genRet.upstream) && Objects.equals(location, genRet.location);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = upstream != null ? upstream.hashCode() : 0;
+            result = 31 * result + (location != null ? location.hashCode() : 0);
+            return result;
         }
     }
 
