@@ -22,7 +22,8 @@ jobs:
         java-version: '11'
         distribution: 'adopt'
     - name: Install Nginx
-      run: yum install nginx -y
+      run: sudo apt-get install -y nginx
     - name: Test Nginx
       run: nginx -T
-
+    - name: Reload Nginx
+      run: nginx -s reload
