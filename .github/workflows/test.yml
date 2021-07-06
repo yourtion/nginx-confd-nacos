@@ -16,6 +16,12 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    services:
+      nacos:
+        image: nacos/nacos-server:2.0.2
+        env:
+          MODE: standalone
+
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 11
@@ -38,4 +44,5 @@ jobs:
       run: ${NginxUtilTestCMD} -s reload
     - name: Test
       run: mvn test
-
+    - name: Nacos Test
+      run: curl http://nacos:8848/nacos/v1/
