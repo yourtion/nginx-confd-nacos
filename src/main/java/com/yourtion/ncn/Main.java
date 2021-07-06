@@ -60,56 +60,60 @@ public class Main {
                 LOGGER.error("Nginx Error");
             }
             NamingService naming = NamingFactory.createNamingService(addr);
-            //noinspection AlibabaThreadPoolCreation
-            ScheduledExecutorService scheduledThreadPool = Executors.newSingleThreadScheduledExecutor();
-            scheduledThreadPool.scheduleAtFixedRate(() -> {
-                LOGGER.debug("scheduleAtFixedRate");
-                try {
-                    ListView<String> serviceList = naming.getServicesOfServer(0, ConfUtil.getInt("ncn.pageSize", 100));
-                    for (String service : serviceList.getData()) {
-                        if (!CURRENT_CONFIG.containsKey(service)) {
-                            naming.subscribe(service, Main::processEvent);
-                        }
-                    }
-                    if (lastGen != null && QUEUE.isEmpty()) {
-                        return;
-                    }
-                    LOGGER.debug("start processing");
-                    HashMap<String, List<Instance>> config = new HashMap<>(CURRENT_CONFIG);
-                    config.putAll(QUEUE);
-                    QUEUE.clear();
-                    // TODO: 处理已经被移除的服务
-                    for (String service : config.keySet()) {
-                        if (config.get(service).isEmpty()) {
-                            naming.unsubscribe(service, Main::processEvent);
-                            config.remove(service);
-                        }
-                    }
-                    NginxConfigGen.GenRet ret = NginxConfigGen.genServer(config);
-                    if (!ret.equals(lastGen)) {
-                        // TODO: 错误处理
-                        boolean uOk = FileUtil.backupAndWrite(ConfUtil.get("ncn.conf.upstream"), ret.getUpstream());
-                        boolean lOk = FileUtil.backupAndWrite(ConfUtil.get("ncn.conf.location"), ret.getLocation());
-                        if (!uOk) {
-                            FileUtil.rollback(ConfUtil.get("ncn.conf.upstream"));
-                        }
-                        if (!lOk) {
-                            FileUtil.rollback(ConfUtil.get("ncn.conf.location"));
-                        }
-                        boolean nOk = nginx.checkNginxOk();
-                        boolean rOk = nginx.reload();
-                        lastGen = ret;
-                    }
-                    // 成功则替换配置
-                    CURRENT_CONFIG.clear();
-                    CURRENT_CONFIG.putAll(config);
-                } catch (Exception e) {
-                    LOGGER.error("ScheduleAtFixedRateError: ", e);
-                }
-            }, ConfUtil.getInt("ncn.delay", 10), ConfUtil.getInt("ncn.period", 5), TimeUnit.SECONDS);
+            startScheduled(nginx, naming);
         } catch (NacosException e) {
             e.printStackTrace();
         }
+    }
 
+    static ScheduledExecutorService startScheduled(NginxUtil nginx, NamingService naming) {
+        //noinspection AlibabaThreadPoolCreation
+        ScheduledExecutorService scheduledThreadPool = Executors.newSingleThreadScheduledExecutor();
+        scheduledThreadPool.scheduleAtFixedRate(() -> {
+            LOGGER.debug("scheduleAtFixedRate");
+            try {
+                ListView<String> serviceList = naming.getServicesOfServer(0, ConfUtil.getInt("ncn.pageSize", 100));
+                for (String service : serviceList.getData()) {
+                    if (!CURRENT_CONFIG.containsKey(service)) {
+                        naming.subscribe(service, Main::processEvent);
+                    }
+                }
+                if (lastGen != null && QUEUE.isEmpty()) {
+                    return;
+                }
+                LOGGER.debug("start processing");
+                HashMap<String, List<Instance>> config = new HashMap<>(CURRENT_CONFIG);
+                config.putAll(QUEUE);
+                QUEUE.clear();
+                // TODO: 处理已经被移除的服务
+                for (String service : config.keySet()) {
+                    if (config.get(service).isEmpty()) {
+                        naming.unsubscribe(service, Main::processEvent);
+                        config.remove(service);
+                    }
+                }
+                NginxConfigGen.GenRet ret = NginxConfigGen.genServer(config);
+                if (!ret.equals(lastGen)) {
+                    // TODO: 错误处理
+                    boolean uOk = FileUtil.backupAndWrite(ConfUtil.get("ncn.conf.upstream"), ret.getUpstream());
+                    boolean lOk = FileUtil.backupAndWrite(ConfUtil.get("ncn.conf.location"), ret.getLocation());
+                    if (!uOk) {
+                        FileUtil.rollback(ConfUtil.get("ncn.conf.upstream"));
+                    }
+                    if (!lOk) {
+                        FileUtil.rollback(ConfUtil.get("ncn.conf.location"));
+                    }
+                    boolean nOk = nginx.checkNginxOk();
+                    boolean rOk = nginx.reload();
+                    lastGen = ret;
+                }
+                // 成功则替换配置
+                CURRENT_CONFIG.clear();
+                CURRENT_CONFIG.putAll(config);
+            } catch (Exception e) {
+                LOGGER.error("ScheduleAtFixedRateError: ", e);
+            }
+        }, ConfUtil.getInt("ncn.delay", 10), ConfUtil.getInt("ncn.period", 5), TimeUnit.SECONDS);
+        return scheduledThreadPool;
     }
 }
