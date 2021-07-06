@@ -10,7 +10,9 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  test:
+    env:
+      NginxUtilTestCMD: nginx -c /tmp/http.conf -p /tmp
 
     runs-on: ubuntu-latest
 
@@ -27,11 +29,13 @@ jobs:
         && touch /tmp/server.location \
         && touch /tmp/nacos.upstream \
     - name: Nginx Test
-      run: nginx -c /tmp/http.conf -p $PWD -T
+      run: ${NginxUtilTestCMD} -T
     - name: Nginx Start
-      run: nginx -c /tmp/http.conf -p $PWD
+      run: ${NginxUtilTestCMD}
     - name: Nginx Curl
       run: curl -I http://127.0.0.1:3000
     - name: Nginx Reload
-      run: nginx -c /tmp/http.conf -p $PWD -s reload
+      run: ${NginxUtilTestCMD} -s reload
+    - name: Test
+      run: mvn test
 
