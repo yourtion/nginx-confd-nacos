@@ -34,6 +34,8 @@ class MainTest {
     }
     @BeforeAll
     static void setUp() throws Exception {
+        System.setProperty("ncn.delay", "1");
+        System.setProperty("ncn.period", "1");
         ConfUtil.loadConfig();
         serverList.add(startService(S1));
         serverList.add(startService(S2));

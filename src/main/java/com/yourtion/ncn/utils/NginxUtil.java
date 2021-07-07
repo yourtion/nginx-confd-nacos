@@ -27,6 +27,7 @@ public class NginxUtil {
      * @return 执行是否成功
      */
     public boolean runCmd(String args) {
+        LOGGER.debug("runCmd: {}", args);
         try {
             Process process = Runtime.getRuntime().exec(cmd + " " + args);
             if (!process.waitFor(TIMEOUT, TimeUnit.SECONDS)) {
@@ -47,6 +48,7 @@ public class NginxUtil {
      * 检查 Nginx 命令与位置
      */
     public boolean checkNginxOk() {
+        LOGGER.debug("checkNginxOk");
         try {
             Process process = Runtime.getRuntime().exec(cmd + " -V");
             if (process.waitFor() != 0) {

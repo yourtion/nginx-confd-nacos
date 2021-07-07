@@ -13,8 +13,6 @@ jobs:
   test:
     env:
       NginxUtilTestCMD: nginx -c /tmp/http.conf -p /tmp
-      ncn.delay: 1
-      ncn.period: 1
       ncn.conf.upstream: /tmp/nacos.upstream
       ncn.conf.location: /tmp/server.location
 
